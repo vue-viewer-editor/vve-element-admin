@@ -56,6 +56,19 @@ export const constantRoutes = [
   },
 
   {
+    path: '/vve',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        name: 'Vve',
+        component: () => import('@/views/vve/index'),
+        meta: { title: 'Vve', icon: 'user' }
+      }
+    ]
+  },
+
+  {
     path: '/example',
     component: Layout,
     redirect: '/example/table',
