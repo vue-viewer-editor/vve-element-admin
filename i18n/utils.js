@@ -2,16 +2,6 @@
 const path = require('path')
 const fs = require('fs')
 
-const rootPathResolve = function () {
-  return path.resolve.apply(path.resolve, [__dirname, '../../'].concat(Array.prototype.slice.call(arguments)))
-}
-
-const pathResolve = {
-  root: rootPathResolve,
-}
-
-exports.pathResolve = pathResolve
-
 // 判断文件是否存在
 function fsExistsSync(path) {
   try{
