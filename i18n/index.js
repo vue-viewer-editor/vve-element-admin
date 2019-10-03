@@ -66,7 +66,7 @@ const config = {
   ],
   // 国际化文本的正则表达式，正则中第一个捕获对象当做国际化文本
   i18nTextRules: [
-    /(?:\$)?t\(['"](.+?)['"]/g,
+    /(?:[\$.])t\(['"](.+?)['"]/g,
   ],
   // 模块的国际化的json文件需要被保留下的key，即使这些组件在项目中没有被引用
   // key可以是一个字符串，正则，或者是函数
@@ -136,9 +136,10 @@ function getModuleI18nData (modulePath, fileContent) {
   if (!i18nData[modulePath]) {
     i18nData[modulePath] = []
   }
-  for (let i = 0; i < config.i18nTextRules; i++) {
+  for (let i = 0; i < config.i18nTextRules.length; i++) {
     const regI18n = new RegExp(config.i18nTextRules[i], 'g')
     while ((tmpRegData.matches = regI18n.exec(fileContent))) {
+      console.log(tmpRegData.matches)
       i18nData[modulePath].push(tmpRegData.matches[1])
     }
   }
@@ -231,13 +232,13 @@ function saveModuleI18nFile() {
     saveI18nFile({ dirPath: key })
   })
 }
-
 vfs.src(
   config.moduleIndexRules.map(item => path.resolve(absoluteRootDir, item)),
 {
   dot: false
 }).pipe(map((file, cb) => {
   const modulePath = path.dirname(file.path)
+
   vfs.src(config.i18nFileRules.map(
     item => path.resolve(modulePath, item)),
     { dot: false} )
