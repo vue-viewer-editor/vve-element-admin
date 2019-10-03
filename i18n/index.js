@@ -1,20 +1,3 @@
-/**
- * 根据配置的根文件夹（rootDir）
- * 根据配置的规则数组，文件匹配规则
- * 根据配置的提出国际化的正则数组，比如：/(?:\$)?t\(['"](.+?)['"]/g
- * 根据配置的输出目录，输出国际化
- * 根据配置的输出国际化语言列表
- * 配置文件目录
- * 配置文件不生效
- */
-/**
- * 示例命令
- * 【抽取全部模块】npm run i18n
- * 【抽离某个模块】npm run i18n -- -m eweb-setting-safe
- * 【翻译】npm run i18n -- -m eweb-setting-safe -t
- * 【强制翻译】npm run i18n -- -m eweb-setting-safe -t -F
- * 【强制翻译某种语言】npm run i18n -- -m eweb-setting-safe -t -F -L en
- */
 'use strict'
 const program = require('commander');
 const jsonfile = require('jsonfile')
@@ -138,7 +121,6 @@ function getModuleI18nData (modulePath, fileContent) {
   for (let i = 0; i < config.i18nTextRules.length; i++) {
     const regI18n = new RegExp(config.i18nTextRules[i], 'g')
     while ((tmpRegData.matches = regI18n.exec(fileContent))) {
-      console.log(tmpRegData.matches)
       i18nData[modulePath].push(tmpRegData.matches[1])
     }
   }
