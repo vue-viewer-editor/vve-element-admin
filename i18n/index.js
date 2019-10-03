@@ -39,7 +39,7 @@ program
   .option('--i18n-text-rules <items>', '国际化文本的正则表达式，正则中第一个捕获对象当做国际化文本', commaSeparatedList)
   .option('--keep-key-rules <items>', '模块的国际化的json文件需要被保留下的key，即使这些组件在项目中没有被引用', commaSeparatedList)
   .option('--out-dir <path>', '生成的国际化资源包的输出目录')
-  .option('--i18n-languages <items>', '需要生成的国际化语言文件，目前支持zh、en多个用逗号分割，默认全部', commaSeparatedList)
+  .option('-l, --i18n-languages <items>', '需要生成的国际化语言文件，目前支持zh、en多个用逗号分割，默认全部', commaSeparatedList)
   .option('--config <path>', '配置文件的路径，没有配置，默认路径是在${cwd}/vve-i18n-cli.config.js')
   .option('--no-config', '是否取配置文件')
   .option('-t, --translate', '是否翻译')
@@ -124,7 +124,6 @@ if (!config.noConfig) {
 const absoluteRootDir = path.resolve(absoluteCwd, config.rootDir);
 
 const fsExistsSync = utils.fsExistsSync
-const copyFile= utils.copyFile
 const filterObjByKeyRules = utils.filterObjByKeyRules
 const translateArr = trans.translateArr
 
@@ -204,7 +203,7 @@ async function saveI18nFile({
     // 模块下i18n/index.js文件不存在才拷贝index.js，或者forceCopyIndex=true强制拷贝
     const i18nIndexFile = path.resolve(i18nDir, 'index.js')
     if ((config.copyIndex && !fsExistsSync(i18nIndexFile)) || config.forceCopyIndex) {
-      copyFile(path.resolve(__dirname, 'res/index.js'), i18nIndexFile)
+      fs.writeFileSync(i18nIndexFile, require('./res/index.js')(i18nLanguages))
     }
 
     // 没有对应语言的国际化文件，就创建一个
