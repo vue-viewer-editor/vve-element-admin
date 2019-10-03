@@ -33,70 +33,71 @@ function commaSeparatedList(value, split = ',') {
 
 program
   .version('1.0.0')
-  .option('--root-dir <path>', '提交国际化文本的根目录')
-  .option('--files <items>', '文件规则，指定哪些文件中的规则化文本需要被提取')
-  .option('--regulars <items>', '国际化文本的正则表达式，正则中第一个捕获对象当做国际化文本', commaSeparatedList)
+  .option('--cwd <path>', '工作目录')
+  .option('--root-dir <path>', '国际文本所在的根目录')
+  .option('--i18n-file-rules <items>', '匹配含有国际化文本的文件规则', commaSeparatedList)
+  .option('--i18n-text-rules <items>', '国际化文本的正则表达式，正则中第一个捕获对象当做国际化文本', commaSeparatedList)
+  .option('--keep-key-rules <items>', '模块的国际化的json文件需要被保留下的key，即使这些组件在项目中没有被引用', commaSeparatedList)
   .option('--out-dir <path>', '生成的国际化资源包的输出目录')
-  .option('--languages <items>', '需要生成的国际化语言文件，目前支持zh、en多个用逗号分割，默认全部', commaSeparatedList)
-  .option('--config <path>', '配置文件路径')
-  .option('--no-config', '忽略rc配置文件')
-  .option('-t, --translate', '是否使用翻译，默认翻译新增的文本，只能再bash环境下，window环境需要再git bash环境下执行')
-  .option('--force-translate', '强制翻译所有的内容')
-  .option('--translate-language <items>', '配合--translate使用，需要翻译的语言，目前支持en、ko，多个用逗号分割，默认全部', commaSeparatedList)
+  .option('--i18n-languages <items>', '需要生成的国际化语言文件，目前支持zh、en多个用逗号分割，默认全部', commaSeparatedList)
+  .option('--config <path>', '配置文件的路径，没有配置，默认路径是在${cwd}/vve-i18n-cli.config.js')
+  .option('--no-config', '是否取配置文件')
+  .option('-t, --translate', '是否翻译')
+  .option('--translate-from-lang', '翻译的基础语言，默认是用中文翻译')
+  .option('--force-translate', '是否强制翻译，即已翻译修改的内容，也重新用翻译生成')
+  .option('--translate-language <items>', '翻译的语言', commaSeparatedList)
   .option('--copy-index', '模块下${outDir}/index.js文件不存在才拷贝index.js')
   .option('--force-copy-index', '是否强制拷贝最新index.js')
   .parse(process.argv);
 
-// 模块的国际化的json文件需要被保留下的key，即使这些组件在项目中没有被引用
-// key可以是一个字符串，正则，或者是函数
-const KEEP_KEY_RULES = [
-  /^G\/+/ // G/开头的会被保留
-]
-
-const REG_I18N = /(?:\$)?t\(['"](.+?)['"]/g
-
-const I18N_LANGUAGES = [
-  'zh', // 中文
-  'en', // 英文
-]
-
-// 翻译的基础语言，默认是用中文翻译
-const TRANSLATE_FORM_LANG = 'zh'
-
-// 默认所有模块，如果有传module参数，就只处理某个模块
-// let moduleProPath = path.resolve(absoluteRootDir, '**/eweb-**/**/pro.properties')
-const MODULE_INDEX_RULES = [
-  'main.js'
-]
-
-const I18N_FILE_RULES = [
-  '**/*.+(vue|js)'
-]
-
-const OUT_DIR = 'lang'
-
 const config = {
+  // 工作目录
   cwd: '.',
+  // 根目录，国际文本所在的根目录
   rootDir: 'src',
-  files: [],
-  regulars: [],
-  outDir: 'lang',
-  // 国际化的语言
-  i18nLanguages: [
-    'zh', // 中文
-    'en', // 英文
+  // 默认所有模块，如果有传module参数，就只处理某个模块
+  // '**/module-**/**/index.js'
+  moduleIndexRules: [
+    'main.js'
+  ],
+  // 匹配含有国际化文本的文件规则
+  i18nFileRules: [
+    '**/*.+(vue|js)'
+  ],
+  // 国际化文本的正则表达式，正则中第一个捕获对象当做国际化文本
+  i18nTextRules: [
+    /(?:\$)?t\(['"](.+?)['"]/g,
   ],
   // 模块的国际化的json文件需要被保留下的key，即使这些组件在项目中没有被引用
   // key可以是一个字符串，正则，或者是函数
   keepKeyRules: [
     /^G\/+/ // G/开头的会被保留
   ],
-  config: '',
+  // 生成的国际化资源包的输出目录
+  outDir: 'lang',
+  // 生成的国际化的语言
+  i18nLanguages: [
+    'zh', // 中文
+    'en', // 英文
+  ],
+  // 配置文件的路径，没有配置，默认路径是在${cwd}/vve-i18n-cli.config.js
+  config: undefined,
+  // 是否取配置文件
   noConfig: false,
+  // 是否翻译
   translate: false,
+  // 翻译的基础语言，默认是用中文翻译
+  translateFromLang: 'zh',
+  // 是否强制翻译，即已翻译修改的内容，也重新用翻译生成
   forceTranslate: false,
-  translateLanguage: [],
+  // 翻译的语言
+  translateLanguage: [
+    'zh',
+    'en'
+  ],
+  // 模块下${outDir}/index.js文件不存在才拷贝index.js
   copyIndex: false,
+  // 是否强制拷贝最新index.js
   forceCopyIndex: false,
 }
 
@@ -125,21 +126,21 @@ const absoluteRootDir = path.resolve(absoluteCwd, config.rootDir);
 const fsExistsSync = utils.fsExistsSync
 const copyFile= utils.copyFile
 const filterObjByKeyRules = utils.filterObjByKeyRules
-const tranlateArr = trans.tranlateArr
-
-
+const translateArr = trans.translateArr
 
 const i18nData = {}
 const tmpRegData = {}
 
 // 从文件中提取模块的的国际化KEY
 function getModuleI18nData (modulePath, fileContent) {
-  const regI18n = new RegExp(REG_I18N, 'g')
   if (!i18nData[modulePath]) {
     i18nData[modulePath] = []
   }
-  while ((tmpRegData.matches = regI18n.exec(fileContent))) {
-    i18nData[modulePath].push(tmpRegData.matches[1])
+  for (let i = 0; i < config.i18nTextRules; i++) {
+    const regI18n = new RegExp(config.i18nTextRules[i], 'g')
+    while ((tmpRegData.matches = regI18n.exec(fileContent))) {
+      i18nData[modulePath].push(tmpRegData.matches[1])
+    }
   }
 }
 
@@ -153,7 +154,7 @@ function normalizeI18nData () {
 
 // 根据旧数据，生成新数据
 async function makeNewData (key, lang, originData) {
-  const newData = filterObjByKeyRules(originData, KEEP_KEY_RULES) // 根据配置保留一些keys值，保证即使在项目中不被引用也能保存下来
+  const newData = filterObjByKeyRules(originData, config.keepKeyRules) // 根据配置保留一些keys值，保证即使在项目中不被引用也能保存下来
   
   let newAddDataArr = [] // 新增的数据，即在旧的翻译文件中没有出现
   
@@ -167,8 +168,8 @@ async function makeNewData (key, lang, originData) {
   })
 
   // 基础语言不翻译（默认中文），因为由中文翻译成其他语言
-  if (config.translate && lang !== TRANSLATE_FORM_LANG) {
-    let tranlateRst = {}
+  if (config.translate && lang !== config.translateFromLang) {
+    let translateRst = {}
 
     // 如果强制翻译，则翻译所有的key
     if (config.forceTranslate) {
@@ -177,11 +178,11 @@ async function makeNewData (key, lang, originData) {
 
     // 配合--translate使用，需要翻译的语言，目前支持en、ko，多个用逗号分割，默认全部
     if (!config.translateLanguage) {
-      tranlateRst = await tranlateArr(TRANSLATE_FORM_LANG, lang, newAddDataArr)
+      translateRst = await translateArr(config.translateFromLang, lang, newAddDataArr)
     } else if (config.translateLanguage.includes(lang)) {
-      tranlateRst = await tranlateArr(TRANSLATE_FORM_LANG, lang, newAddDataArr)
+      translateRst = await translateArr(config.translateFromLang, lang, newAddDataArr)
     }
-    Object.assign(newData, tranlateRst)
+    Object.assign(newData, translateRst)
   }
   return newData
 }
@@ -190,11 +191,11 @@ async function makeNewData (key, lang, originData) {
 async function saveI18nFile({
   dirPath,
 } = {}) {
-  const i18nLanguages = I18N_LANGUAGES
+  const i18nLanguages = config.i18nLanguages
 
   for (let i = 0; i < i18nLanguages.length; i++) {
     const item = i18nLanguages[i]
-    const i18nDir = path.resolve(dirPath, OUT_DIR)
+    const i18nDir = path.resolve(dirPath, config.outDir)
     if (!fsExistsSync(i18nDir)) {
       fs.mkdirSync(i18nDir);
     }
@@ -232,12 +233,12 @@ function saveModuleI18nFile() {
 }
 
 vfs.src(
-  MODULE_FILES.map(item => path.resolve(absoluteRootDir, item)),
+  config.moduleIndexRules.map(item => path.resolve(absoluteRootDir, item)),
 {
   dot: false
 }).pipe(map((file, cb) => {
-  const modulePath = path.resolve(file.path, '..')
-  vfs.src(I18N_FILE_RULES.map(
+  const modulePath = path.dirname(file.path)
+  vfs.src(config.i18nFileRules.map(
     item => path.resolve(modulePath, item)),
     { dot: false} )
   .pipe(map((file, cb) => {

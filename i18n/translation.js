@@ -5,7 +5,7 @@ const { google, baidu, youdao } = require('translation.js')
  * https://github.com/Selection-Translator/translation.js
  * youdao, baidu, google
  */
-function tranlate (fromLang, lang, word) {
+function translate (fromLang, lang, word) {
   const from = fromLang === 'zh' ? 'zh-CN' : fromLang
 
   // 默认使用Baidu
@@ -18,18 +18,18 @@ function tranlate (fromLang, lang, word) {
   })
 }
 
-exports.tranlate = tranlate
+exports.translate = translate
 
 /**
  * 翻译列表
  * 如果其中一个翻译错误，跳过
  * 顺序执行，防止同时开太多进程，程序异常
  */
-async function tranlateArr (fromLang, lang, wordArr) {
+async function translateArr (fromLang, lang, wordArr) {
   const result = []
   for (let i = 0; i < wordArr.length; i++) {
     const word = wordArr[i]
-    const p = tranlate(fromLang, lang, word).then(res => {
+    const p = translate(fromLang, lang, word).then(res => {
       console.log(word, '\t' + res)
       result[word] = res
     }).catch(err => {
@@ -40,8 +40,8 @@ async function tranlateArr (fromLang, lang, wordArr) {
   return result
 }
 
-exports.tranlateArr = tranlateArr
+exports.translateArr = translateArr
 
-// tranlateArr('zh', 'en', ['您好', '哈哈']).then(res => {
+// translateArr('zh', 'en', ['您好', '哈哈']).then(res => {
 //   console.log(res)
 // })
